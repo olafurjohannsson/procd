@@ -38,15 +38,26 @@ void get_date(char *date)
     snprintf(date, 128, "%d-%d-%d %d:%d:%d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
+struct proc_info {
+    
+    unsigned id;
+    const char *name;
+    time_t timestamp;
+    
+};
 
 
 
 void read_dir()
 {
+    printf("read_dir\n");
+
     DIR *dir;
     struct dirent *e;
 
     e = malloc(sizeof(struct dirent));
+    
+
     dir = opendir("/proc");
 
     while ((e = readdir(dir)) != NULL)
@@ -59,14 +70,17 @@ void read_dir()
     }
 
     closedir(dir);
-
+    // lsof
+    // sysctl -a
+    // ps ax
+    
 }
 
-int main(void)
+void start_daemon()
 {
     // Process ID and Session ID
     pid_t pid, sid;
- 
+    
 #ifdef DEBUG
     char buffer[128];
     get_date(buffer);
@@ -86,7 +100,7 @@ int main(void)
     
     // change file mode mask
     umask(0);
-
+    
     // create SID for child process
     sid = setsid();
     if (sid == -1) {
@@ -99,21 +113,27 @@ int main(void)
         printf("chdir fail\n");
         exit(EXIT_FAILURE);
     }
-
+    
 #ifndef DEBUG
     // close std fds
     close(STDIN_FILENO);
-    close(STDOUT_FILENO);    
+    close(STDOUT_FILENO);
     close(STDERR_FILENO);
 #endif
     printf("before while\n");
     // daemon init
     
+    read_dir();
+    
     while (1) {
         printf("1\n");
-
+        
         exit(EXIT_SUCCESS);
     }
-
-    return EXIT_SUCCESS;
 }
+/*
+int main(void)
+{
+
+}
+ */
