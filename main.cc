@@ -9,6 +9,9 @@
 #include <syslog.h>
 #include <string.h>
 #include <dirent.h>
+#include <signal.h>
+#include <ctype.h>
+#include <sys/wait.h>
 #include <time.h>
 
 // C++
@@ -36,35 +39,45 @@
     It forks 4 dedicated processes to monitor the listed events, it uses signals and shared memory for communication.
 */
 
-const unsigned verbose = 0;
+unsigned verbose = 0;
 const unsigned process_pool_count = 4;
 const char *shm = "/dev/shm/";
 
 #include "process/process.h"
 
 
-int main(void)
+void usage(char **argv) {
+    printf("%s: \n\t-v (verbose)\n\t-p (process pool count)\n", argv[0]);
+}
+
+void sig_handler(unsigned sig)
+{
+    printf("sig %d\n", sig);
+}
+
+int main(int argc, char **argv)
 {
     time_t t(0);
-    std::cout << "started \n";
+
     
-    //if (argc > 1)
-
-
-
-    procd::Process p;
-    pid_t pid = p.create();
-    cpu_type_t cp;
-    
-    if (p.is_child()) {
-        std::cout << "i am child, my pid is " << (pid == p.get_pid() ? "same" : "notsame") << ", " << p.get_pid() << std::endl;
-        std::cout << "cpy type " << p.GetCPUTypeForProcess(pid, &cp);
-    }
-    else if (p.is_parent())
+    if (argc > 1)
     {
-        std::cout << "i am parent, my pid is " << (pid == p.get_pid() ? "same" : "notsame") << ", " << p.get_pid() << std::endl;
-        std::cout << "cpy type " << p.GetCPUTypeForProcess(pid, &cp);
+        char c;
+        while ((c = getopt(argc, argv, "vp")) != EOF) {
+            switch (c) {
+                case 'v':
+                    verbose = 1;
+                    break;
+                default:
+                    usage(argv);
+                    break;
+            }
+        }
     }
+    else
+        usage(argv);
+
+    signal(SIGINT, sig_handler); // ctrl c
     
     return 0;
 }
