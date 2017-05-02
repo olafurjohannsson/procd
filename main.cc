@@ -58,15 +58,31 @@ void signal_handler(int sig)
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 #include <sys/file.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
+
+#include "ug.c"
 
 int main(int argc, char **argv)
 {
     time_t t(0);
 
 
+    return 0;
+    uid_t uid = getuid();
+    printf("uid %d\n", uid);
+    uid_t uid2 = userid_from_name("olafurj");
+    printf("uid %d\n", uid2);
+    const char *name = username_from_userid(uid2);
+    printf("name %s\n", name);
+
+    int lim = pathconf("/", _PC_NAME_MAX);
+    printf("limit %d\n", lim);
+    long page_size = sysconf(_SC_PAGE_SIZE);
+    printf("pagesize %d\n", page_size);
+    return 0;
     // Use POSIX API, not System V
     // use shm or mmap file for ipc (can also use boost) but that means C++
     // use pcap for net sniffing
