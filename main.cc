@@ -20,14 +20,19 @@
 #include <numeric>
 #include <future>
 #include <thread>
+
 #include <exception>
+#ifdef macOS
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
 #include <mach/shared_region.h>
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
+#ifdef macOS
 #include <sys/sysctl.h>
-
+#endif
 
 /*
     Process Daemon
@@ -50,10 +55,12 @@ void usage(char **argv) {
     printf("%s: \n\t-v (verbose)\n\t-p (process pool count)\n", argv[0]);
 }
 
-void sig_handler(unsigned sig)
+void signal_handler(int sig)
 {
     printf("sig %d\n", sig);
 }
+
+
 
 int main(int argc, char **argv)
 {
@@ -63,8 +70,10 @@ int main(int argc, char **argv)
     if (argc > 1)
     {
         char c;
-        while ((c = getopt(argc, argv, "vp")) != EOF) {
-            switch (c) {
+        while ( (c = getopt(argc, argv, "vp")) != -1 ) {
+            printf("%c\n", c);
+            continue;
+            switch ( c ) {
                 case 'v':
                     verbose = 1;
                     break;
@@ -77,7 +86,7 @@ int main(int argc, char **argv)
     else
         usage(argv);
 
-    signal(SIGINT, sig_handler); // ctrl c
+    signal(SIGINT, signal_handler); // ctrl c
     
     return 0;
 }

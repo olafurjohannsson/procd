@@ -57,6 +57,7 @@ class Process
         closedir(dir);
     }
 
+#ifdef macOS
     bool GetCPUTypeForProcess(pid_t pid, cpu_type_t *cpu_type)
     {
         size_t len = sizeof(*cpu_type);
@@ -74,6 +75,7 @@ class Process
         }
         return true;
     }
+#endif
 
   private:
     pid_t pid;
