@@ -42,7 +42,7 @@ unsigned verbose = 0;
 const unsigned process_pool_count = 4;
 const char *shm = "/dev/shm/";
 
-#include "process/process.h"
+#include "proc/process.h"
 
 
 void usage(char **argv) {
@@ -69,6 +69,16 @@ int main(int argc, char **argv)
 {
     time_t t(0);
 
+    void *f;
+
+    f = malloc(2048);
+
+    printf("0x%x\n", f);
+
+    free(f);
+    return 0;
+
+    /*
 
     return 0;
     uid_t uid = getuid();
@@ -83,6 +93,7 @@ int main(int argc, char **argv)
     long page_size = sysconf(_SC_PAGE_SIZE);
     printf("pagesize %d\n", page_size);
     return 0;
+    */
     // Use POSIX API, not System V
     // use shm or mmap file for ipc (can also use boost) but that means C++
     // use pcap for net sniffing
