@@ -73,14 +73,18 @@ int main(int argc, char **argv)
     // use inotify for file system events
     // 
 
-    pid_t pid = fork();
-    if (pid == 0)
+
+
+    // 4 child processes
+    // data collection process that reads from shared memory
+    // networking data producer process (pcap)
+    // file system data producer process (inotify)
+    // process data producer process (procfs)
+    // 1 main process that is a daemon and manages the 4 procs
+    // signals can also be used for state (SIGUSR1, SIGUSR2)
+
+    
     {
-        printf("pid %d\n", pid);
-    }
-    else
-    {
-        printf("child pid %d\n", pid);
         int r;
         const char *memname = "sample";
         const size_t region_size = sysconf(_SC_PAGE_SIZE);
@@ -93,6 +97,36 @@ int main(int argc, char **argv)
         r = ftruncate(shm_fd, region_size);
         if (r != 0)
             perror("ftruncate");
+        
+        {
+            off_t offset = 0;
+            void *p = mmap(NULL, region_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, offset);
+            if (p == MAP_FAILED)
+                perror("mmap");
+            close (shm_fd);
+
+            pid_t pid = fork();
+            if (pid == 0) {
+                u_long *d = (u_long*)p;
+                *d = 0xdeadbeef;
+                printf("parent exiting\n");
+                exit(0);
+            }
+            else {
+                int status;
+                waitpid(pid, &status, 0);
+                printf("child wrote %#lx\n", *(u_long*)p);
+            }
+
+            r = munmap(p, region_size);
+            if (r != 0)
+                perror("munmap");
+
+            r = shm_unlink(memname);
+            if (r != 0)
+                perror("shm_unlink");
+
+        }
 
     }
 
