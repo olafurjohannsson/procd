@@ -13,25 +13,19 @@
 #include <ctype.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sysctl.h>
+#include <stddef.h>
+#include <stdint.h>
 
-// C++
-#include <iostream>
-#include <string>
-#include <numeric>
-#include <future>
-#include <thread>
-
-#include <exception>
 #ifdef macOS
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
 #include <mach/shared_region.h>
 #endif
 
-#include <stddef.h>
-#include <stdint.h>
 #ifdef macOS
-#include <sys/sysctl.h>
 #endif
 
 /*
@@ -60,13 +54,63 @@ void signal_handler(int sig)
     printf("sig %d\n", sig);
 }
 
-
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/file.h>
+#include <sys/mman.h>
+#include <sys/wait.h>
 
 int main(int argc, char **argv)
 {
     time_t t(0);
 
-    
+
+    // Use POSIX API, not System V
+    // use shm or mmap file for ipc (can also use boost) but that means C++
+    // use pcap for net sniffing
+    // use inotify for file system events
+    // 
+
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        printf("pid %d\n", pid);
+    }
+    else
+    {
+        printf("child pid %d\n", pid);
+        int r;
+        const char *memname = "sample";
+        const size_t region_size = sysconf(_SC_PAGE_SIZE);
+        printf("region_size %d, page size %d\n", region_size, _SC_PAGE_SIZE);
+
+        int shm_fd = shm_open(memname, O_CREAT | O_TRUNC | O_RDWR, 0666);
+        if (shm_fd == -1)
+            perror("shm_fd");
+
+        r = ftruncate(shm_fd, region_size);
+        if (r != 0)
+            perror("ftruncate");
+
+    }
+
+    return 0;
+
+    int pagesize, fd;
+    char *data;
+    printf("opening\n");
+    fd = open("/dev/shm/foo", O_RDONLY);
+    printf("fd %s\n", fd);
+    pagesize = getpagesize();
+    printf("pagesize %d\n", pagesize);
+    data = (char*)mmap((caddr_t)NULL, pagesize, PROT_READ, MAP_SHARED, fd, pagesize);
+
+
+    return 0;
+
+
     if (argc > 1)
     {
         char c;
