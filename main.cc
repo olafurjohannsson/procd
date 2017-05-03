@@ -18,15 +18,21 @@
 #include <sys/sysctl.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/file.h>
+#include <sys/mman.h>
+#include <limits.h>
+
 
 #ifdef macOS
+
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
 #include <mach/shared_region.h>
 #endif
 
-#ifdef macOS
-#endif
+
+
+#include "ug.c"
 
 /*
     Process Daemon
@@ -42,7 +48,6 @@ unsigned verbose = 0;
 const unsigned process_pool_count = 4;
 const char *shm = "/dev/shm/";
 
-#include "proc/process.h"
 
 
 void usage(char **argv) {
@@ -54,28 +59,87 @@ void signal_handler(int sig)
     printf("sig %d\n", sig);
 }
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <limits.h>
-#include <sys/file.h>
-#include <sys/mman.h>
-#include <sys/wait.h>
+struct monitor_t {
+    uint32_t id;
 
-#include "ug.c"
+};
+
+// the 4 processes, can use clone() or fork()
+void init_process_monitor(void);
+void init_network_monitor(void);
+void init_filesys_monitor(void);
+void init_usrgrps_monitor(void);
+
+union conv32 {
+    uint32_t u32;
+    float    f32;
+};
+
+float conv(uint32_t t)
+{
+    return ((union conv32){.u32 = t}).f32;
+}
+
+static int show_cpuinfo(struct seq_file *m, void *v)
+{
+    struct cpuinfo_x86 *c;
+    unsigned cpu;
+    int i;
+    return 0;
+}
+static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
+                               unsigned int *ecx, unsigned int *edx)
+{
+    asm volatile("cpuid"
+            : "=a" (*eax),
+              "=b" (*ebx),
+              "=c" (*ecx),
+              "=d" (*edx)
+            : "" (*eax), "2" (*ecx)
+            : "memory");
+}
+// see
+// http://lxr.free-electrons.com/source/arch/x86/kernel/cpu/proc.c#L85
+float get_cpu_clock_speed()
+{
+    FILE* fp;
+    char buffer[1024];
+    size_t bytes_read;
+    char *match;
+    float clock_speed;
+
+    fp = fopen("/proc/cpuinfo", "r");
+    bytes_read = fread(buffer, 1, sizeof buffer, fp);
+    fclose(fp);
+    printf("bytes read %d\n", bytes_read);
+    if (bytes_read == 0)
+    {
+        return 0;
+    }
+    buffer[bytes_read] = '\0';
+    match = strstr(buffer, "cpu MHz");
+    if (match == NULL)
+        return 0;
+    sscanf(match, "cpu MHz         : %f", &clock_speed);
+    return clock_speed;
+}
 
 int main(int argc, char **argv)
 {
-    time_t t(0);
+    unsigned int a,b,c,d;
 
-    void *f;
-
-    f = malloc(2048);
-
-    printf("0x%x\n", f);
-
-    free(f);
+    native_cpuid(&a, &b, &c, &d);
+    if (a >= 16)
+        native_cpuid(&a, &b, &c, &d);
+    printf("%p %p %p %p\n", a, b, c, d);
+    char *ccc = (char*)(intptr_t)a;
+    printf("ccc %p\n", ccc);
+    uint32_t t = 123;
+    float f = conv(t);
+    
+    printf("int %d, fl %.6f\n", t, f);
+    f = get_cpu_clock_speed();
+    printf("CPU clock speed: %4.0f MHz\n", f);
     return 0;
 
     /*
