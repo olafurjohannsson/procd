@@ -35,14 +35,14 @@
 #include "ug.c"
 
 /*
-    Process Daemon
+   Process Daemon
 
-    Daemon that monitors processes and their threads, network traffic, file system events and users/groups.
+   Daemon that monitors processes and their threads, network traffic, file system events and users/groups.
 
-    Implementation is macOS and GNU/Linux.
+   Implementation is macOS and GNU/Linux.
 
-    It forks 4 dedicated processes to monitor the listed events, it uses signals and shared memory for communication.
-*/
+   It forks 4 dedicated processes to monitor the listed events, it uses signals and shared memory for communication.
+   */
 
 unsigned verbose = 0;
 const unsigned process_pool_count = 4;
@@ -88,13 +88,13 @@ static int show_cpuinfo(struct seq_file *m, void *v)
     return 0;
 }
 static inline void native_cpuid(unsigned int *eax, unsigned int *ebx,
-                               unsigned int *ecx, unsigned int *edx)
+        unsigned int *ecx, unsigned int *edx)
 {
     asm volatile("cpuid"
             : "=a" (*eax),
-              "=b" (*ebx),
-              "=c" (*ecx),
-              "=d" (*edx)
+            "=b" (*ebx),
+            "=c" (*ecx),
+            "=d" (*edx)
             : "" (*eax), "2" (*ecx)
             : "memory");
 }
@@ -111,7 +111,6 @@ float get_cpu_clock_speed()
     fp = fopen("/proc/cpuinfo", "r");
     bytes_read = fread(buffer, 1, sizeof buffer, fp);
     fclose(fp);
-    printf("bytes read %d\n", bytes_read);
     if (bytes_read == 0)
     {
         return 0;
@@ -126,38 +125,70 @@ float get_cpu_clock_speed()
 
 int main(int argc, char **argv)
 {
-    unsigned int a,b,c,d;
 
-    native_cpuid(&a, &b, &c, &d);
-    if (a >= 16)
-        native_cpuid(&a, &b, &c, &d);
-    printf("%p %p %p %p\n", a, b, c, d);
-    char *ccc = (char*)(intptr_t)a;
-    printf("ccc %p\n", ccc);
-    uint32_t t = 123;
-    float f = conv(t);
-    
-    printf("int %d, fl %.6f\n", t, f);
-    f = get_cpu_clock_speed();
-    printf("CPU clock speed: %4.0f MHz\n", f);
-    return 0;
+    // log time of app start in logfile /var/procd/procd.log
+    // parse input, such as (push_interval, verbosity)
+    // create struct procd_t that is the daemon structure
+    // create struct procd_net_t (network process listener)
+    // create struct procd_proc_t (process info listener)
+    // create struct procd_fs_t (filesystem listener)
+    // keep the three struct in an array
+    // use shared memory or memory mapped file for communications
+    // add signals for state
+    // start by create process info listener
+    pid_t pid;    
+
+    switch ((pid = fork())) {
+        case 0:
+            printf("parent\n");
+            exit(0);
+            break;
+        default:
+            printf("child %d\n", pid);
+            break;
+    }
+    printf("%f\n", get_cpu_clock_speed());
+
+    sleep(1);
+    exit(0);
+
 
     /*
 
-    return 0;
-    uid_t uid = getuid();
-    printf("uid %d\n", uid);
-    uid_t uid2 = userid_from_name("olafurj");
-    printf("uid %d\n", uid2);
-    const char *name = username_from_userid(uid2);
-    printf("name %s\n", name);
 
-    int lim = pathconf("/", _PC_NAME_MAX);
-    printf("limit %d\n", lim);
-    long page_size = sysconf(_SC_PAGE_SIZE);
-    printf("pagesize %d\n", page_size);
-    return 0;
-    */
+       unsigned int a,b,c,d;
+       native_cpuid(&a, &b, &c, &d);
+       if (a >= 16)
+       native_cpuid(&a, &b, &c, &d);
+       printf("%d MHz, %d, %d\n", a, b, c);
+
+
+       char *ccc = (char*)(intptr_t)a;
+       printf("ccc %p\n", ccc);
+       uint32_t t = 123;
+       float f = conv(t);
+
+       printf("int %d, fl %.6f\n", t, f);
+       f = get_cpu_clock_speed();
+       printf("CPU clock speed: %4.0f MHz\n", f);
+       return 0;
+       */
+    /*
+
+       return 0;
+       uid_t uid = getuid();
+       printf("uid %d\n", uid);
+       uid_t uid2 = userid_from_name("olafurj");
+       printf("uid %d\n", uid2);
+       const char *name = username_from_userid(uid2);
+       printf("name %s\n", name);
+
+       int lim = pathconf("/", _PC_NAME_MAX);
+       printf("limit %d\n", lim);
+       long page_size = sysconf(_SC_PAGE_SIZE);
+       printf("pagesize %d\n", page_size);
+       return 0;
+       */
     // Use POSIX API, not System V
     // use shm or mmap file for ipc (can also use boost) but that means C++
     // use pcap for net sniffing
@@ -174,7 +205,7 @@ int main(int argc, char **argv)
     // 1 main process that is a daemon and manages the 4 procs
     // signals can also be used for state (SIGUSR1, SIGUSR2)
 
-    
+
     {
         int r;
         const char *memname = "sample";
@@ -188,7 +219,7 @@ int main(int argc, char **argv)
         r = ftruncate(shm_fd, region_size);
         if (r != 0)
             perror("ftruncate");
-        
+
         {
             off_t offset = 0;
             void *p = mmap(NULL, region_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, offset);
@@ -256,6 +287,6 @@ int main(int argc, char **argv)
         usage(argv);
 
     signal(SIGINT, signal_handler); // ctrl c
-    
+
     return 0;
 }
