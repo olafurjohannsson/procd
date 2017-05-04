@@ -13,6 +13,15 @@
 #define macOS
 #endif
 
+
+
+#ifdef macOS
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
+#include <mach/mach_traps.h>
+#include <mach/mach_init.h>
+#endif
+
 #define print(msg) printf(msg); printf("\n");
 
 #define handle_error(msg) \
@@ -45,6 +54,9 @@ class shared_memory
     shared_memory(const shared_memory&) = delete;
     void operator=(const shared_memory&) = delete;
 
+    #ifdef macOS
+    mach_port_t memory_object;
+    #endif
 };
 }
 
