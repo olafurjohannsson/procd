@@ -13,6 +13,7 @@
 #define macOS
 #endif
 
+#define Linux __linux__
 
 
 #ifdef macOS

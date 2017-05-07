@@ -47,8 +47,11 @@ bool root::shared_memory::create(const std::string &name, uint32_t bytes)
             VM_PROT_WRITE | VM_PROT_READ | VM_PROT_IS_MASK,
             VM_INHERIT_NONE);
         return kr == KERN_SUCCESS;
-    #elif
+    #endif
+
+    #ifdef Linux
     uint32_t fd = open("test", O_CREAT | O_RDWR, 0777);
+    
     void *memory = mmap(NULL,
                         bytes,
                         PROT_READ | PROT_WRITE,
@@ -64,8 +67,8 @@ bool root::shared_memory::create(const std::string &name, uint32_t bytes)
     {
         handle_error("mmap");
     }
-
     #endif
+
     return false;
 }
 
